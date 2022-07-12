@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Audio archive</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js" integrity="sha512-Hyk+1XSRfagqzuSHE8M856g295mX1i5rfSV5yRugcYFlvQiE3BKgg5oFRfX45s7I8qzMYFa8gbFy9xMFbX7Lqw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.css" integrity="sha512-A81ejcgve91dAWmCGseS60zjrAdohm7PTcAjjiDWtw3Tcj91PNMa1gJ/ImrhG+DbT5V+JQ5r26KT5+kgdVTb5w==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
+        <style>
+            audio {
+                width: 90%;
+            }
+
+            .sticky-top {
+                position: sticky;
+                top: 20px;
+                z-index: 9000;
+            }
+
+            .glyphicon {
+                font-size: 18px;
+            }
+
+            .node-played {
+                background-color: light-green !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="page-header">
+                <h2>Jerry Garcia and friends</h2>
+                <p class="lead">
+                Jerry Garcia, Grateful Dead and David Grisman music archive. About 150k tracks.
+                </p>
+                <small>
+                    <a href=https://github.com/yekm/htmlplayer>Source Code</a>
+                    <a href=/done>Download lossless</a>
+                    <a href=missing.txt>Missing torrents</a>
+                </small>
+            </div>
+            <p>
+                <input type="text" class="form-control" placeholder="at least 4 characters for search, for example: jgdg" id=search>
+            </p>
+        </div>
+        <div class="container sticky-top">
+            <audio controls></audio>
+        </div>
+        <div id="treeview1"></div>
+    </body>
+    <script type="text/javascript">
+        var current = null;
+        $(document).ready(function() {
+            function playlink(l) {
+                link = l.hash.substr(1);
+                console.log("playing", link);
+                ext = link.split(".").pop();
+                console.log(ext);
+                if (ext == "flac" || ext == "opus") {
+                    $("audio").attr('src', link);
+                    $("audio").trigger("play");
+                    current = l;
+                    $(current).parent().addClass('node-played');
+                } else if (ext == "txt") {}
+            }
+            $.getJSON("fs.json", function(d) {
+                var $etree = $('#treeview1').treeview({
+                    data: d,
+                    enableLinks: true,
+                });
+
+                var findExpandibleNodess = function() {
+                    return $etree.treeview('search', [$('#search').val(), {
+                        ignoreCase: true,
+                        exactMatch: false
+                    }]);
+                };
+                var expandibleNodes = findExpandibleNodess();
+
+                // Expand/collapse/toggle nodes
+                $('#search').on('keyup', function(e) {
+                    if ($('#search').val().length > 3) {
+                        expandibleNodes = findExpandibleNodess();
+                        $('.expand-node').prop('disabled', !(expandibleNodes.length >= 1));
+                    }
+                });
+
+                $('#treeview1').on('click', 'a', function() {
+                    selected = $(this);
+                    playlink($(this)[0]);
+                });
+                $("audio").on('ended', function() {
+                    p = $('a[href="' + decodeURIComponent(current.hash) + '"]').parent();
+                    // WTF: actual coloring of the node depends on inline style, not on element class
+                    p.removeClass('node-played');
+                    p.next().addClass('node-played');
+                    newlink = p.next().children("a")[0];
+                    console.log("ended", newlink);
+                    playlink(newlink);
+                });
+            });
+
+        });
+    </script>
+</html>
