@@ -8,10 +8,14 @@ for d in gd grisman jg ; do
         cut -f 1,3 | \
         grep -e "$d$" | \
         cut -f1 | \
-        sed 's,/mnt/../torrent,../..,' | \
-        xargs -d'\n' -n1 ln -s
+        sed 's,/mnt/[^/]*/torrent,../..,' | \
+        parallel ln -s
     cd ..
 done
 
-# find -L . | sort | ~/go/src/fsjson/fsjson > fs.json
+cd ../all
+find -L ../done -mindepth 3 -maxdepth 3 -type d | parallel ln -s
+ls -d ??19??-??-??* | parallel 'mv -v {} $(echo {} | sed "s/^\(..\)19\(..-..-..\)/\1\2/")'
+
+# time find -L . -mindepth 2 | sort | ~/go/src/fsjson/fsjson > fs.json
 
